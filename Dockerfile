@@ -2,7 +2,7 @@ FROM alpine:latest as stage
 
 WORKDIR /opt/stage
 
-COPY bin/setup-iris.sh bin/entrypoint.sh mac/TestRunner.mac /opt/stage/helpers/
+COPY scripts/setup-iris.sh bin/entrypoint.sh mac/TestRunner.mac /opt/stage/helpers/
 
 RUN apk update \
   && apk add wget \
@@ -10,7 +10,7 @@ RUN apk update \
   && wget https://raw.githubusercontent.com/rfns/forgery/master/forgery-prod.xml -P /opt/stage/helpers \
   && wget https://raw.githubusercontent.com/rfns/frontier/master/frontier-prod.xml -P /opt/stage/helpers \
   && chmod +x /opt/stage/helpers/setup-iris.sh \
-  && chmod +x /opt/stage/helpers/entrypoint.sh \
+  && chmod +x /opt/stage/helpers/entrypoint.sh
 
 FROM store/intersystems/iris-community:2019.4.0.383.0
 
