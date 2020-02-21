@@ -5,9 +5,9 @@ on:
     types: [published]
 
 jobs:
-  runs-on: ubuntu-latest
 
   build:
+    runs-on: ubuntu-latest
     steps:
     - name: Clone this repository
       uses: actions/checkout@v2
