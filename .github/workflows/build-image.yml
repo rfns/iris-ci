@@ -1,0 +1,24 @@
+name: Build and publish tagged docker image
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  runs-on: ubuntu-latest
+
+  build:
+    steps:
+    - name: Clone this repository
+      uses: actions/checkout@v2
+      with:
+        path: app
+    - name: Parse the tag
+      id: tag_parsing
+      run:  echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+    - name: Build and run
+      run: |
+        docker login -U {{ secrets.GITHUB_TOKEN }}
+        docker build -t docker.pkg.github.com/rfns/port-test-runner/port-test-runner:{{ steps.tag_parsing.VERSION }} app
+
+

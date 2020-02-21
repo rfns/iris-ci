@@ -1,0 +1,14 @@
+Start(pwd)
+  try {
+    do ##class(Port.Configuration).SetCustomWorkspace("app", "/opt/runner/app")
+    do ##class(Port.Configuration).SetTestFormat("UDL")
+    do $System.OBJ.MakeClassDeployed("Port.*,Frontier.*,Forgery.*")
+    $$$ThrowOnError(##class(Port.Project.Manager).Import("/opt/runner/app"))
+    do $System.OBJ.CompileAll("cku")
+    $$$ThrowOnError(##class(Port.UnitTest.Manager).RunTestsFromWorkspace("app"))
+  } catch ex {
+    write !!, $System.Status.GetErrorText(ex.AsStatus())
+    do $System.Process.Terminate($job, 1)
+  }
+  close "/dev/pts/0"
+  quit $$$OK
