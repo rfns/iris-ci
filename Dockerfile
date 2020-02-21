@@ -2,7 +2,7 @@ FROM alpine:latest as stage
 
 WORKDIR /opt/stage
 
-COPY scripts/setup-iris.sh scripts/entrypoint.sh mac/TestRunner.mac /opt/stage/helpers/
+COPY scripts/setup-iris.sh scripts/entrypoint.sh TestRunner.xml /opt/stage/helpers/
 
 RUN apk update \
   && apk add wget \
@@ -31,7 +31,7 @@ RUN \
   do $System.OBJ.Load("/opt/runner/helpers/port-prod.xml", "cku") \
   do $System.OBJ.Load("/opt/runner/helpers/forgery-prod.xml", "cku") \
   do $System.OBJ.Load("/opt/runner/helpers/frontier-prod.xml", "cku") \
-  do $System.OBJ.Load("/opt/runner/helpers/TestRunner.mac", "cku")
+  do $System.OBJ.Load("/opt/runner/helpers/TestRunner.xml", "cku")
 
 SHELL ["/bin/bash", "-c"]
 

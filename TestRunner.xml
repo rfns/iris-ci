@@ -1,4 +1,8 @@
-Start(pwd)
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="IRIS" version="25">
+<Routine name="TestRunner" type="MAC" languagemode="0" timestamp="65415,60235.264679"><![CDATA[
+#include %occStatus
+Start
   try {
     do ##class(Port.Configuration).SetCustomWorkspace("app", "/opt/runner/app")
     do ##class(Port.Configuration).SetTestFormat("UDL")
@@ -10,5 +14,6 @@ Start(pwd)
     write !!, $System.Status.GetErrorText(ex.AsStatus())
     do $System.Process.Terminate($job, 1)
   }
-  close "/dev/pts/0"
   quit $$$OK
+]]></Routine>
+</Export>
