@@ -18,8 +18,8 @@ jobs:
       run:  echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
     - name: Build and run
       run: |
-        docker login -u rfns -p ${{ secrets.GITHUB_TOKEN }} docker.pkg.github.com
-        docker build -t docker.pkg.github.com/rfns/port-test-runner/port-test-runner:${{ steps.tag_parsing.outputs.VERSION }} app
+        cat ~/GH_TOKEN.txt | docker login -u rfns --password-stdin docker.pkg.github.com
+        docker build -t docker.pkg.github.com/rfns/test-runner/port-test-runner:${{ steps.tag_parsing.outputs.VERSION }} app
         docker push docker.pkg.github.com/rfns/test-runner/port-test-runner:${{ steps.tag_parsing.outputs.VERSION }}
 
 
