@@ -18,7 +18,7 @@ jobs:
       run:  echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
     - name: Build and run
       run: |
-        docker login -U {{ secrets.GITHUB_TOKEN }}
+        docker login -u rfns -p {{ secrets.GITHUB_TOKEN }} docker.pkg.github.com
         docker build -t docker.pkg.github.com/rfns/port-test-runner/port-test-runner:{{ steps.tag_parsing.VERSION }} app
 
 
