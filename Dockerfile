@@ -2,7 +2,7 @@ FROM alpine:latest as stage
 
 WORKDIR /opt/stage
 
-COPY scripts/setup-iris.sh bin/entrypoint.sh mac/TestRunner.mac /opt/stage/helpers/
+COPY scripts/setup-iris.sh scripts/entrypoint.sh mac/TestRunner.mac /opt/stage/helpers/
 
 RUN apk update \
   && apk add wget \
