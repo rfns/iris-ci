@@ -12,7 +12,7 @@ exit_if_error() {
 }
 
 iris start IRIS quietly
-iris session IRIS -U USER "run^testrunner"
+iris session IRIS -U USER "Start^TestRunner"
 
 exit_if_error "Failed to complete the operation."
 iris stop IRIS quietly
