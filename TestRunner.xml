@@ -4,16 +4,85 @@
 #include %occStatus
 Start
   try {
-    do ##class(Port.Configuration).SetCustomWorkspace("app", "/opt/runner/app")
+    set appName = $System.Util.GetEnviron("CI_APP_NAME")
+    if appName = "" set appName = "default"
+    do ##class(Port.Configuration).SetCustomWorkspace(appName, "/opt/runner/app")
     do ##class(Port.Configuration).SetTestFormat("UDL")
     do $System.OBJ.MakeClassDeployed("Port.*,Frontier.*,Forgery.*")
     $$$ThrowOnError(##class(Port.Project.Manager).Import("/opt/runner/app"))
-    do $System.OBJ.CompileAll("cku")
-    $$$ThrowOnError(##class(Port.UnitTest.Manager).RunTestsFromWorkspace("app"))
+    do $System.OBJ.CompileAll("/nodisplay")
+    write !, "Running test suites ... ", !!
+    $$$ThrowOnError(##class(Port.UnitTest.Manager).RunTestsFromWorkspace(appName,,,"/nodisplay"))
+    write !!, "Results will be displayed below."
+    do CountAssertions
+    do AssertSuiteStatuses
   } catch ex {
-    write !!, $System.Status.GetErrorText(ex.AsStatus())
+    set status = ex.AsStatus()
+    do CreateErrorLog(status)
     do $System.Process.Terminate($job, 1)
   }
   quit $$$OK
+
+CreateErrorLog(status)
+  set fs = ##class(%Stream.FileCharacter).%New()
+  do fs.LinkToFile("/var/log/runner/errors.log")
+  set content = $piece($System.Status.GetErrorText(status), $c(10), 2, *)
+  do fs.Write(content)
+  do fs.%Save()
+  quit
+
+CountAssertions
+  set success = 0
+  set failure = 0
+
+  &sql(SELECT COUNT (ID) INTO :success FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 1)
+  &sql(SELECT COUNT (ID) INTO :failure FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 0)
+
+  set fs = ##class(%Stream.FileCharacter).%New()
+  do fs.LinkToFile("/var/log/runner/testsuccess.log")
+  set fs.TranslateTable = "UTF8"
+  do fs.Write("✓ "_success_ " assertions have passed.")
+  do fs.%Save()
+  set fs = ""
+
+  set fs = ##class(%Stream.FileCharacter).%New()
+  set fs.TranslateTable = "UTF8"
+  do fs.LinkToFile("/var/log/runner/testfailure.log")
+  do fs.Write("✗ "_failure_ " assertions have failed.")
+  do fs.%Save()
+  set fs = ""
+  quit
+
+AssertSuiteStatuses
+  set sc = $$$OK
+  set msg = ""
+  set testResult = ##class(%UnitTest.Result.TestInstance).%OpenId(1)
+  for i=1:1:testResult.TestSuites.Count() {
+    set testSuite = testResult.TestSuites.GetAt(i)
+    if testSuite.Status = 0 {
+      set msg = msg_$c(10)_"Assertion failure on test suite named "_testSuite.Name
+      for j=1:1:testSuite.TestCases.Count() {
+        set testCase = testSuite.TestCases.GetAt(j)
+        if testCase.Status = 0 {
+          set msg = msg_$c(10)_"  "_"while running "_testCase.Name_"..."
+          for k=1:1:testCase.TestMethods.Count() {
+            set testMethod = testCase.TestMethods.GetAt(k)
+            if testMethod.Status = 0 {
+              set msg = msg_$c(10)_"    "_"and executing the nethod "_testMethod.Name_"..."
+              for l=1:1:testMethod.TestAsserts.Count() {
+                set testAssert = testMethod.TestAsserts.GetAt(l)
+                if testAssert.Status = 0 {
+                  set msg = msg_$c(10)_"      "_"failed while asserting action "_testAssert.Action_" with description: "_testAssert.Description
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if msg '= "" set sc = $$$ERROR($$$GeneralError, msg)
+  $$$ThrowOnError(sc)
+  quit sc
 ]]></Routine>
 </Export>
