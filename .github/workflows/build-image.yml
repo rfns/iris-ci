@@ -23,4 +23,3 @@ jobs:
         docker build -t docker.pkg.github.com/rfns/iris-port-ci/iris-port-ci:${{ steps.tag_parsing.outputs.VERSION }} app
         docker push docker.pkg.github.com/rfns/iris-port-ci/iris-port-ci:${{ steps.tag_parsing.outputs.VERSION }}
 
-
