@@ -2,7 +2,7 @@ FROM alpine:latest as stage
 
 WORKDIR /opt/stage
 
-COPY scripts/setup-iris.sh scripts/entrypoint.sh TestRunner.xml forgery-fork.xml /opt/stage/helpers/
+COPY scripts/setup-iris.sh scripts/entrypoint.sh TestRunner.xml /opt/stage/helpers/
 
 RUN apk update \
   && apk add wget \
