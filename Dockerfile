@@ -2,39 +2,27 @@ FROM alpine:latest as stage
 
 WORKDIR /opt/stage
 
-COPY scripts/setup-iris.sh scripts/entrypoint.sh TestRunner.xml /opt/stage/helpers/
-
-RUN apk update \
-  && apk add wget \
-  && wget https://raw.githubusercontent.com/rfns/port/master/port-prod.xml -P /opt/stage/helpers \
-  && wget https://raw.githubusercontent.com/rfns/frontier/master/frontier-prod.xml -P /opt/stage/helpers \
-  && wget https://raw.githubusercontent.com/rfns/forgery/master/forgery-prod.xml -P /opt/stage/helpers \
-  && chmod +x /opt/stage/helpers/setup-iris.sh \
-  && chmod +x /opt/stage/helpers/entrypoint.sh
+COPY scripts/setup-iris.sh scripts/entrypoint.sh /opt/stage/scripts/
+COPY ci ./
 
 FROM store/intersystems/iris-community:2019.4.0.383.0
 
-WORKDIR /opt/runner
-COPY --from=stage /opt/stage/helpers /opt/runner/helpers
-
-VOLUME /opt/runner/app
+WORKDIR /opt/ci
+COPY --from=stage /opt/stage /opt/ci
 
 USER root
-RUN mkdir -p /var/log/runner \
-  && chown -R irisowner:irisowner /opt/runner/helpers /var/log/runner
+
+RUN mkdir -p /var/log/ci \
+  && chmod -R +x /opt/ci/scripts \
+  && chown -R irisowner:irisowner /var/log/ci /opt/ci
 
 USER irisowner
-
-SHELL ["/opt/runner/helpers/setup-iris.sh"]
+SHELL ["/opt/ci/scripts/setup-iris.sh"]
 
 RUN \
-  zn "USER" \
-  do $System.OBJ.Load("/opt/runner/helpers/port-prod.xml", "cku") \
-  do $System.OBJ.Load("/opt/runner/helpers/frontier-prod.xml", "cku") \
-  do $System.OBJ.Load("/opt/runner/helpers/forgery-prod.xml", "cku") \
-  do $System.OBJ.Load("/opt/runner/helpers/TestRunner.xml", "cku")
-
-SHELL ["/bin/bash", "-c"]
+  do $System.OBJ.Load("/opt/ci/TestRunner/Configuration.cls", "ck") \
+  do $System.OBJ.Load("/opt/ci/TestRunner/Orchestrator.cls", "ck") \
+  do $System.OBJ.Load("/opt/ci/TestRunner/Logger.cls", "ck")
 
 CMD ["-l", "/usr/irissys/mgr/messages.log"]
-ENTRYPOINT ["/opt/runner/helpers/entrypoint.sh"]
+ENTRYPOINT ["/opt/ci/scripts/entrypoint.sh"]

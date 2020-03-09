@@ -1,38 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Export generator="IRIS" version="25">
-<Routine name="TestRunner" type="MAC" languagemode="0" timestamp="65415,60235.264679"><![CDATA[
-#include %occStatus
-Start
-  try {
-    do $System
-    set appName = $System.Util.GetEnviron("CI_APP_NAME")
-    if appName = "" set appName = "default"
-    do ##class(Port.Configuration).SetCustomWorkspace(appName, "/opt/runner/app")
-    do ##class(Port.Configuration).SetTestFormat("UDL")
-    do $System.OBJ.MakeClassDeployed("Port.*,Frontier.*,Forgery.*")
-    $$$ThrowOnError(##class(Port.Project.Manager).Import("/opt/runner/app"))
-    do $System.OBJ.CompileAll("/nodisplay")
-    write !, "Running test suites ... ", !!
-    $$$ThrowOnError(##class(Port.UnitTest.Manager).RunTestsFromWorkspace(appName,,,"/nodisplay"))
-    write !!, "Results will be displayed below."
-    do CountAssertions
-    do AssertSuiteStatuses
-  } catch ex {
-    set status = ex.AsStatus()
-    do CreateErrorLog(status)
-    do $System.Process.Terminate($job, 1)
-  }
-  quit $$$OK
+Include %occStatus
 
-CreateErrorLog(status)
+Class CI.TestRunner.Logger [ Abstract ]
+{
+
+ClassMethod CreateErrorLog(status)
+{
   set fs = ##class(%Stream.FileCharacter).%New()
-  do fs.LinkToFile("/var/log/runner/errors.log")
+  do fs.LinkToFile("/var/log/ci/errors.log")
   set content = $piece($System.Status.GetErrorText(status), $c(10), 2, *)
   do fs.Write(content)
-  do fs.%Save()
-  quit
+  return fs.%Save()
+}
 
-CountAssertions
+ClassMethod CountAssertions() As %Status
+{
   set success = 0
   set failure = 0
 
@@ -40,7 +21,7 @@ CountAssertions
   &sql(SELECT COUNT (ID) INTO :failure FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 0)
 
   set fs = ##class(%Stream.FileCharacter).%New()
-  do fs.LinkToFile("/var/log/runner/testsuccess.log")
+  do fs.LinkToFile("/var/log/ci/testsuccess.log")
   set fs.TranslateTable = "UTF8"
   do fs.Write("✓ "_success_ " assertions have passed.")
   do fs.%Save()
@@ -48,16 +29,16 @@ CountAssertions
 
   set fs = ##class(%Stream.FileCharacter).%New()
   set fs.TranslateTable = "UTF8"
-  do fs.LinkToFile("/var/log/runner/testfailure.log")
+  do fs.LinkToFile("/var/log/ci/testfailure.log")
   do fs.Write("✗ "_failure_ " assertions have failed.")
-  do fs.%Save()
-  set fs = ""
-  quit
+  return fs.%Save()
+}
 
-AssertSuiteStatuses
+ClassMethod ParseTestFailures() As %Status
+{
   set sc = $$$OK
   set msg = ""
-  set testResult = ##class(%UnitTest.Result.TestInstance).%OpenId(1)
+  set testResult = ##class(%UnitTest.Result.TestInstance).%OpenId($order(^UnitTest.Result(""), -1))
   for i=1:1:testResult.TestSuites.Count() {
     set testSuite = testResult.TestSuites.GetAt(i)
     if testSuite.Status = 0 {
@@ -83,7 +64,6 @@ AssertSuiteStatuses
     }
   }
   if msg '= "" set sc = $$$ERROR($$$GeneralError, msg)
-  $$$ThrowOnError(sc)
-  quit sc
-]]></Routine>
-</Export>
+  return sc
+}
+}
