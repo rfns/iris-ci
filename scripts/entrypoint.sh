@@ -6,7 +6,7 @@ light_green="\033[1;32m"
 green="\033[0;32m"
 
 display_test_errors() {
-  local errorfile="/var/log/runner/errors.log"
+  local errorfile="/var/log/ci/errors.log"
   if [ -f "$errorfile" ]; then
     errorlog=$(<"$errorfile")
     echo -e "\n\n${red}$errorlog${normal}" >&2
@@ -14,18 +14,18 @@ display_test_errors() {
 }
 
 display_assertion_count() {
-  local successlog="/var/log/runner/testsuccess.log"
-  local failurelog="/var/log/runner/testfailure.log"
+  local successlog="/var/log/ci/testsuccess.log"
+  local failurelog="/var/log/ci/testfailure.log"
 
   echo -e "\n\n"
 
   if [ -f "$successlog" ]; then
-    log=$(</var/log/runner/testsuccess.log)
+    log=$(</var/log/ci/testsuccess.log)
     echo -e "\n${light_green}$log${normal}"
   fi
 
   if [ -f "$failurelog" ]; then
-    log=$(</var/log/runner/testfailure.log)
+    log=$(</var/log/ci/testfailure.log)
     echo -e "${red}$log${normal}"
   fi
 
@@ -34,7 +34,7 @@ display_assertion_count() {
 
   if [ "$failures_count" != 0 ]; then
     echo -e "${red}EXITED WITH ERRORS.${normal}\n\n"
-    exit 1;
+    exit 1
   else
     echo -e "${green}EXITED WITHOUT ERRORS.${normal}\n\n"
   fi
@@ -43,12 +43,12 @@ display_assertion_count() {
 exit_if_error() {
   if [ $(($(echo "${PIPESTATUS[@]}" | tr -s ' ' +))) -ne 0 ]; then
     echo -e "{$red}$1${normal}"
-    exit 1;
+    exit 1
   fi
 }
 
 iris start IRIS quietly
-iris session IRIS -U USER "Start^TestRunner"
+iris session IRIS -U USER "##class(CI.TestRunner.Orchestrator).Orchestrate()"
 
 display_test_errors
 display_assertion_count
