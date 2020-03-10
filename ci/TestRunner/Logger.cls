@@ -12,7 +12,7 @@ ClassMethod CreateErrorLog(status)
   return fs.%Save()
 }
 
-ClassMethod CountAssertions() As %Status
+ClassMethod RegisterAssertionStatistics() As %Status
 {
   set success = 0
   set failure = 0
@@ -34,7 +34,7 @@ ClassMethod CountAssertions() As %Status
   return fs.%Save()
 }
 
-ClassMethod ParseTestFailures() As %Status
+ClassMethod  CreateSummaryFromFailures() As %Status
 {
   set sc = $$$OK
   set msg = ""
@@ -50,11 +50,11 @@ ClassMethod ParseTestFailures() As %Status
           for k=1:1:testCase.TestMethods.Count() {
             set testMethod = testCase.TestMethods.GetAt(k)
             if testMethod.Status = 0 {
-              set msg = msg_$c(10)_"    "_"and executing the nethod "_testMethod.Name_"..."
+              set msg = msg_$c(10)_"    "_"and executing the method "_testMethod.Name_"..."
               for l=1:1:testMethod.TestAsserts.Count() {
                 set testAssert = testMethod.TestAsserts.GetAt(l)
                 if testAssert.Status = 0 {
-                  set msg = msg_$c(10)_"      "_"failed while asserting action "_testAssert.Action_" with description: "_testAssert.Description
+                  set msg = msg_$c(10)_"      "_"failed while asserting the action "_testAssert.Action_" with description: "_testAssert.Description
                 }
               }
             }
