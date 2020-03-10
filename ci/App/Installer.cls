@@ -12,13 +12,13 @@ XData setup
 
   <Namespace Name="${ns}" Code="${ns}" Data="${ns}" Create="yes" Ensemble="no">
     <Configuration>
-      <Database Name="${ns}" Dir="/opt/ci/data" Create="yes" Resource="%DB_${ns}"/>
-      <Import File="/opt/ci/root" Flags="ck" Recurse="1"/>
+      <Database Name="${ns}" Dir="/opt/ci/data" Create="yes" Resource="%DB_${ns}" />
+      <Import File="/opt/ci/root" Flags="/compile/nodisplay" Recurse="1" IgnoreErrors="1" />
     </Configuration>
-    <If Condition="$length(app) '= 0">
+    <If Condition="$data(app)">
       <CSPApplication Url="${app}" Directory="${cspdir}${app}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
     </If>
-    <If Condition="$length(dispatchclass) '= 0">
+    <If Condition="$data(dispatchclass)">
       <CSPApplication Url="${restapp}" DispatchClass="${dispatchclass}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
     </If>
   </Namespace>
