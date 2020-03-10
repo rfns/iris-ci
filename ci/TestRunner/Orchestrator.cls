@@ -5,27 +5,28 @@ Class CI.TestRunner.Orchestrator [ Abstract ]
 
 ClassMethod Orchestrate() As %Status
 {
-  set maybeNamespace = $System.Util.GetEnviron("CI_NS")
+  try {
+    $$$ThrowOnError($System.OBJ.Load("/opt/ci/App/Installer.cls", "/compile"))
+    $$$ThrowOnError($System.OBJ.Load("/opt/ci/TestRunner/Runner.cls", "/compile"))
 
-  new $namespace
-  if maybeNamespace '= "" set $namespace = maybeNamespace
+    write !
+    $$$ThrowOnError(##class(CI.App.Installer).setup())
+    write !
 
-  $$$QuitOnError($System.OBJ.Load("/opt/ci/App/Installer.cls", "/compile"))
-  $$$QuitOnError($System.OBJ.Load("/opt/ci/TestRunner/Runner.cls", "/compile"))
+    set configuration = ##class(CI.TestRunner.Configuration).%New()
+    $$$ThrowOnError(##class(CI.TestRunner.Runner).Run(configuration))
 
-  write !
-  zw ##class(CI.App.Installer).setup()
-  write !
+    set summary = ##class(CI.TestRunner.Logger).CreateSummaryFromFailures()
 
-  set configuration = ##class(CI.TestRunner.Configuration).%New()
-  set sc = ##class(CI.TestRunner.Runner).Run(configuration)
+    if $$$ISERR(summary) {
+      $$$ThrowOnError(##class(CI.TestRunner.Logger).CreateErrorLog(summary))
+    }
 
-  if $$$ISERR(sc) {
-    $$$QuitOnError(##class(CI.TestRunner.Logger).CreateErrorLog(sc))
+    $$$ThrowOnError(##class(CI.TestRunner.Logger).RegisterAssertionStatistics())
+  } catch ex {
+    do ##class(CI.TestRunner.Logger).CreateErrorLog(summary)
+    do $System.Process.Terminate(, 1)
   }
-
-  $$$QuitOnError(##class(CI.TestRunner.Logger).CountAssertions())
-  $$$QuitOnError(##class(CI.TestRunner.Logger).ParseTestFailures())
 
   return $$$OK
 }
