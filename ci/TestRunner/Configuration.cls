@@ -1,6 +1,5 @@
 Class CI.TestRunner.Configuration Extends %RegisteredObject
 {
-Property Root As %String;
 
 Property RecurseFlag As %String;
 
@@ -16,7 +15,6 @@ Method %OnNew() As %Status
 
 Method PrepareTestContext()
 {
-  set ..Root = $System.Util.GetEnviron("CI_TESTROOT")
   set ..TestSuite = $System.Util.GetEnviron("CI_TESTSUITE")
   set ..TestMethod = $System.Util.GetEnviron("CI_TESTMETHOD")
   set ..RecurseFlag = ..ResolveRecurseFlag()
