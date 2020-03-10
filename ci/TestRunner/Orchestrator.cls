@@ -1,6 +1,6 @@
 Include %occStatus
 
-Class CI.TestRunner.Orchestrator [ Abstract ]
+Class CI.TestRunner.Orchestrator
 {
 
 ClassMethod Orchestrate() As %Status
@@ -24,7 +24,8 @@ ClassMethod Orchestrate() As %Status
 
     $$$ThrowOnError(##class(CI.TestRunner.Logger).RegisterAssertionStatistics())
   } catch ex {
-    do ##class(CI.TestRunner.Logger).CreateErrorLog(summary)
+    set status = ex.AsStatus()
+    do ##class(CI.TestRunner.Logger).CreateErrorLog(status)
     do $System.Process.Terminate(, 1)
   }
 
