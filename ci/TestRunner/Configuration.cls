@@ -24,8 +24,8 @@ Method PrepareTestContext()
 
 Method ResolveRecurseFlag() As %String
 {
-  if ..TestMethod '= "" return "recursive"
-  return ""
+  if ..TestMethod = "" return "recursive"
+  return "norecursive"
 }
 
 }
