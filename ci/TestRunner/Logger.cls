@@ -1,13 +1,13 @@
 Include %occStatus
 
-Class CI.TestRunner.Logger [ Abstract ]
+Class CI.TestRunner.Logger
 {
 
-ClassMethod CreateErrorLog(status)
+ClassMethod CreateErrorLog(status) As %Status
 {
   set fs = ##class(%Stream.FileCharacter).%New()
   do fs.LinkToFile("/var/log/ci/errors.log")
-  set content = $piece($System.Status.GetErrorText(status), $c(10), 2, *)
+  set content = $piece($System.Status.GetErrorText(status), ":", 2, *)
   do fs.Write(content)
   return fs.%Save()
 }
@@ -42,7 +42,7 @@ ClassMethod  CreateSummaryFromFailures() As %Status
   for i=1:1:testResult.TestSuites.Count() {
     set testSuite = testResult.TestSuites.GetAt(i)
     if testSuite.Status = 0 {
-      set msg = msg_$c(10)_"Assertion failure on test suite named "_testSuite.Name
+      set msg = msg_$c(10)_"Assertion failure on test suite located at "_testSuite.Name
       for j=1:1:testSuite.TestCases.Count() {
         set testCase = testSuite.TestCases.GetAt(j)
         if testCase.Status = 0 {
