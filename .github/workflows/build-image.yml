@@ -21,5 +21,5 @@ jobs:
         echo "${{ secrets.GITHUB_TOKEN }}" > ~/GH_TOKEN.txt
         cat ~/GH_TOKEN.txt | docker login -u rfns --password-stdin docker.pkg.github.com
         docker build -t docker.pkg.github.com/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }} app
-        docker push docker.pkg.github.com/rfns/iris-port-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }}
+        docker push docker.pkg.github.com/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }}
 
