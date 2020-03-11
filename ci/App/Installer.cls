@@ -4,23 +4,20 @@ Class CI.App.Installer
 XData setup
 {
 <Manifest>
-  <Default Name="ns" Value='#{$System.Util.GetEnviron("CI_NS")}'/>
-  <Default Name="app" Value='#{$System.Util.GetEnviron("CI_CSPAPP")}' />
-  <Default Name="pwd" Value='#{$System.Util.GetEnviron("PWD")}' />
-  <Default Name="dispatchclass" Value='#{$System.Util.GetEnviron("CI_RESTDISPATCHCLASS")}' />
-  <Default Name="restapp" Value='#{$System.Util.GetEnviron("CI_RESTAPP")}' />
-
-  <Namespace Name="${ns}" Code="${ns}" Data="${ns}" Create="yes" Ensemble="no">
+  <Default Name="namespace" Value="USER"/>
+  <Namespace Name="${namespace}" Code="${namespace}" Data="${namespace}" Create="yes" Ensemble="no">
     <Configuration>
-      <Database Name="${ns}" Dir="/opt/ci/data" Create="yes" Resource="%DB_${ns}" />
+      <Database Name="${namespace}" Dir="/opt/ci/data" Create="yes" Resource="%DB_${namespace}" />
       <Import File="/opt/ci/root" Flags="/compile/nodisplay" Recurse="1" IgnoreErrors="1" />
     </Configuration>
-    <If Condition="$data(app)">
+    <IfDef Var="cspapp">
       <CSPApplication Url="${app}" Directory="${cspdir}${app}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
-    </If>
-    <If Condition="$data(dispatchclass)">
-      <CSPApplication Url="${restapp}" DispatchClass="${dispatchclass}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
-    </If>
+    </IfDef>
+    <IfDef Var="restapp">
+      <IfDef Var="restdispatchclass">
+        <CSPApplication Url="${restapp}" DispatchClass="${restdispatchclass}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
+      </IfDef>
+    </IfDef>
   </Namespace>
 
 </Manifest>
