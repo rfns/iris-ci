@@ -34,7 +34,7 @@ ClassMethod Orchestrate() As %Status
   return $$$OK
 }
 
-ClassMethod GetEnvironmentVars(Output vars As %String = "", Output envs As %ArrayOfDataTypes = "") As %Status [ Private ]
+ClassMethod GetEnvironmentVars(Output vars As %String = "", Output envs As %ArrayOfDataTypes = "") As %Status
 {
   set envs = ##class(DotEnv.Parser).FromPath("/opt/ci")
   set name = ""

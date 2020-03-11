@@ -8,6 +8,8 @@ ClassMethod Run(configuration As CI.TestRunner.Configuration) As %Status
   set environmentNS = configuration.Envs.GetAt("CI_NAMESPACE")
   set $namespace = $get(environmentNS, $namespace)
 
+  merge params = configuration.TestParameters
+
   #define NULL $s($$$isWINDOWS : "//./nul", 1: "/dev/null")
 
   set ^UnitTestRoot = "/opt/ci/root"
@@ -25,7 +27,7 @@ ClassMethod Run(configuration As CI.TestRunner.Configuration) As %Status
   open $$$NULL
   use $$$NULL
 
-  set sc = ##class(%UnitTest.Manager).RunTest(testSpec, flags)
+  set sc = ##class(%UnitTest.Manager).RunTest(testSpec, flags, .params)
 
   use io
   close $$$NULL
