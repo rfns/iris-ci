@@ -11,11 +11,11 @@ XData setup
       <Import File="/opt/ci/root" Flags="/compile/nodisplay" Recurse="1" IgnoreErrors="1" />
     </Configuration>
     <IfDef Var="cspapp">
-      <CSPApplication Url="${app}" Directory="${cspdir}${app}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
+      <CSPApplication Url="${cspapp}" Directory="${cspdir}${cspapp}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
     </IfDef>
     <IfDef Var="restapp">
       <IfDef Var="restdispatchclass">
-        <CSPApplication Url="${restapp}" DispatchClass="${restdispatchclass}"  ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
+        <CSPApplication Url="${restapp}" DispatchClass="${restdispatchclass}" Directory="/opt/_dummycsp" ServeFiles="1" Recurse="1" MatchRoles="%All" AuthenticationMethods="32"/>
       </IfDef>
     </IfDef>
   </Namespace>
@@ -25,7 +25,7 @@ XData setup
 
 ClassMethod setup(
 	ByRef pVars,
-	pLogLevel As %Integer = 3,
+	pLogLevel As %Integer = 2,
 	pInstaller As %Installer.Installer,
 	pLogger As %Installer.AbstractLogger) As %Status [ CodeMode = objectgenerator, Internal ]
 {
