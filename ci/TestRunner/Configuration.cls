@@ -5,10 +5,13 @@ Property RecurseFlag As %String;
 
 Property TestSuite As %String;
 
-Property TestMethod As %String;
+Property TestCase As %String;
 
-Method %OnNew() As %Status
+Property Envs As array of %String;
+
+Method %OnNew(envList As %ArrayOfDataTypes) As %Status
 {
+  set ..Envs = envList
   do ..PrepareTestContext()
   return $$$OK
 }
@@ -16,13 +19,13 @@ Method %OnNew() As %Status
 Method PrepareTestContext()
 {
   set ..TestSuite = $System.Util.GetEnviron("CI_TESTSUITE")
-  set ..TestMethod = $System.Util.GetEnviron("CI_TESTMETHOD")
+  set ..TestCase = $System.Util.GetEnviron("CI_TESTCASE")
   set ..RecurseFlag = ..ResolveRecurseFlag()
 }
 
 Method ResolveRecurseFlag() As %String
 {
-  if ..TestMethod = "" return "recursive"
+  if ..TestCase = "" return "recursive"
   return "norecursive"
 }
 
