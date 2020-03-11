@@ -9,9 +9,12 @@ Property TestCase As %String;
 
 Property Envs As array of %String;
 
+Property TestParameters As %String [ MultiDimensional ];
+
 Method %OnNew(envList As %ArrayOfDataTypes) As %Status
 {
   set ..Envs = envList
+  do ..ParseTestParameters()
   do ..PrepareTestContext()
   return $$$OK
 }
@@ -21,6 +24,20 @@ Method PrepareTestContext()
   set ..TestSuite = $System.Util.GetEnviron("CI_TESTSUITE")
   set ..TestCase = $System.Util.GetEnviron("CI_TESTCASE")
   set ..RecurseFlag = ..ResolveRecurseFlag()
+}
+
+Method ParseTestParameters()
+{
+  set name = ""
+  set i%TestParameters = ""
+
+  for i=1:1:..Envs.Count() {
+    set name = ..Envs.GetAt(name)
+    if $extract(name, 1, 10) = "TESTPARAM_" {
+      set paramName = $extract(name, 11, *)
+      set i%TestParameters(paramName) = ..Envs.GetAt(name)
+    }
+  }
 }
 
 Method ResolveRecurseFlag() As %String
