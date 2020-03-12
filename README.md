@@ -15,7 +15,7 @@ docker pull rfns/iris-ci:0.4.0
 2. Run the container (with the default settings)
 
 ```
-docker run --rm --name ci -t -v /path/to/your/app:/opt/ci/app rfns/iris-ci
+docker run --rm --name ci -t -v /path/to/your/app:/opt/ci/app rfns/iris-ci:0.4.0
 ```
 
 ## Environment variables
