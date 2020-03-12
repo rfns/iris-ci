@@ -18,16 +18,17 @@ ClassMethod Orchestrate() As %Status
     set configuration = ##class(CI.TestRunner.Configuration).%New(envList)
     $$$ThrowOnError(##class(CI.TestRunner.Runner).Run(configuration))
 
-    set summary = ##class(CI.TestRunner.Logger).CreateSummaryFromFailures()
+    $$$ThrowOnError(##class(CI.TestRunner.Logger).CreateSummaryFromFailures(.summary))
+    $$$ThrowOnError(##class(CI.TestRunner.Logger).RegisterAssertionStatistics())
 
-    if $$$ISERR(summary) {
-      $$$ThrowOnError(##class(CI.TestRunner.Logger).CreateErrorLog(summary))
+    if summary '= "" {
+      $$$ThrowOnError(##class(CI.TestRunner.Logger).CreateErrorLogFromStream(summary))
+      do $System.Process.Terminate(, 1)
     }
 
-    $$$ThrowOnError(##class(CI.TestRunner.Logger).RegisterAssertionStatistics())
   } catch ex {
     set status = ex.AsStatus()
-    do ##class(CI.TestRunner.Logger).CreateErrorLog(status)
+    do ##class(CI.TestRunner.Logger).CreateErrorLogFromStatus(status)
     do $System.Process.Terminate(, 1)
   }
 
