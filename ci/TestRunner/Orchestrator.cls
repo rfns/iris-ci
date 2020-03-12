@@ -44,7 +44,9 @@ ClassMethod GetEnvironmentVars(Output vars As %String = "", Output envs As %Arra
     for i=1:1:envs.Count() {
       set name = envs.Next(name)
       set value = envs.GetAt(name)
-      set vars($$$lcase($replace(name, "CI_", ""))) = value
+      if $extract(name, 1, 3) = "CI_" {
+        set vars($$$lcase($replace(name, "CI_", ""))) = value
+      }
     }
   }
 
