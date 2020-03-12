@@ -29,6 +29,8 @@ There are three types of environment variables:
 If you don't specify the `TEST_SUITE` the `recursive` flag will be set.
 So if you have a project with many classes, it might be interesting to at least define the `TEST_SUITE` due to performance concerns.
 
+You can provide these variables by using a `.env` or by passing it directly to the container using the `-e` flag. You can read more about the `run` command and its flags from the official Docker [documentation.](https://docs.docker.com/engine/reference/commandline/run/).
+
 
 ## About the installer manifest
 
