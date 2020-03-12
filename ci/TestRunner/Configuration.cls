@@ -21,8 +21,8 @@ Method %OnNew(envList As %ArrayOfDataTypes) As %Status
 
 Method PrepareTestContext()
 {
-  set ..TestSuite = $System.Util.GetEnviron("CI_TESTSUITE")
-  set ..TestCase = $System.Util.GetEnviron("CI_TESTCASE")
+  set ..TestSuite = $System.Util.GetEnviron("TEST_SUITE")
+  set ..TestCase = $System.Util.GetEnviron("TEST_CASE")
   set ..RecurseFlag = ..ResolveRecurseFlag()
 }
 
@@ -32,7 +32,7 @@ Method ParseTestParameters()
   set i%TestParameters = ""
 
   for i=1:1:..Envs.Count() {
-    set name = ..Envs.GetAt(name)
+    set name = ..Envs.Next(name)
     if $extract(name, 1, 10) = "TESTPARAM_" {
       set paramName = $extract(name, 11, *)
       set i%TestParameters(paramName) = ..Envs.GetAt(name)
