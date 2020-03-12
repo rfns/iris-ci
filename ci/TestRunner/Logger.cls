@@ -3,12 +3,20 @@ Include %occStatus
 Class CI.TestRunner.Logger
 {
 
-ClassMethod CreateErrorLog(status) As %Status
+ClassMethod CreateErrorLogFromStatus(status) As %Status
 {
   set fs = ##class(%Stream.FileCharacter).%New()
   do fs.LinkToFile("/var/log/ci/errors.log")
   set content = $piece($System.Status.GetErrorText(status), ":", 2, *)
   do fs.Write(content)
+  return fs.%Save()
+}
+
+ClassMethod CreateErrorLogFromStream(stream As %Stream.Object) As %Status
+{
+  set fs = ##class(%Stream.FileCharacter).%New()
+  do fs.LinkToFile("/var/log/ci/errors.log")
+  do fs.CopyFrom(stream)
   return fs.%Save()
 }
 
@@ -34,27 +42,26 @@ ClassMethod RegisterAssertionStatistics() As %Status
   return fs.%Save()
 }
 
-ClassMethod  CreateSummaryFromFailures() As %Status
+ClassMethod  CreateSummaryFromFailures(Output msg As %Stream.FileCharacter = "") As %Status
 {
-  set sc = $$$OK
-  set msg = ""
+  set msg = ##class(%Stream.FileCharacter).%New()
   set testResult = ##class(%UnitTest.Result.TestInstance).%OpenId($order(^UnitTest.Result(""), -1))
   for i=1:1:testResult.TestSuites.Count() {
     set testSuite = testResult.TestSuites.GetAt(i)
     if testSuite.Status = 0 {
-      set msg = msg_$c(10)_"Assertion failure on test suite located at "_testSuite.Name
+      do msg.WriteLine("Assertion failure on test suite located at "_testSuite.Name)
       for j=1:1:testSuite.TestCases.Count() {
         set testCase = testSuite.TestCases.GetAt(j)
         if testCase.Status = 0 {
-          set msg = msg_$c(10)_"  "_"while running "_testCase.Name_"..."
+          do msg.WriteLine("  "_"while running "_testCase.Name_"...")
           for k=1:1:testCase.TestMethods.Count() {
             set testMethod = testCase.TestMethods.GetAt(k)
             if testMethod.Status = 0 {
-              set msg = msg_$c(10)_"    "_"and executing the method "_testMethod.Name_"..."
+              do msg.WriteLine("    "_"and executing the method "_testMethod.Name_"...")
               for l=1:1:testMethod.TestAsserts.Count() {
                 set testAssert = testMethod.TestAsserts.GetAt(l)
                 if testAssert.Status = 0 {
-                  set msg = msg_$c(10)_"      "_"failed while asserting the action "_testAssert.Action_" with description: "_testAssert.Description
+                  do msg.WriteLine("      "_"failed while asserting the action "_testAssert.Action_" with description: "_testAssert.Description)
                 }
               }
             }
@@ -63,7 +70,6 @@ ClassMethod  CreateSummaryFromFailures() As %Status
       }
     }
   }
-  if msg '= "" set sc = $$$ERROR($$$GeneralError, msg)
-  return sc
+  return $$$OK
 }
 }
