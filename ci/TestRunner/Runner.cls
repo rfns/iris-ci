@@ -12,7 +12,7 @@ ClassMethod Run(configuration As CI.TestRunner.Configuration) As %Status
 
   #define NULL $s($$$isWINDOWS : "//./nul", 1: "/dev/null")
 
-  set ^UnitTestRoot = "/opt/ci/root"
+  set ^UnitTestRoot = "/opt/ci/app"
   set flags = "/"_configuration.RecurseFlag_"/run/noload/nodelete/nodisplay"
   set testSpec = configuration.TestSuite_":"_configuration.TestCase
 
