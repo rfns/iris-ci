@@ -9,7 +9,7 @@ Basically a way to run your unit tests in a way that continuous integration tool
 1. Download the image from the registry:
 
 ```
-docker pull rfns/iris-ci
+docker pull rfns/iris-ci:0.4.0
 ```
 
 2. Run the container (with the default settings)
