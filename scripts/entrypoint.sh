@@ -62,7 +62,7 @@ exit_if_error() {
 }
 
 iris start IRIS quietly
-iris session IRIS -U USER "##class(CI.TestRunner.Orchestrator).Orchestrate()"
+iris session IRIS -U USER "##class(CI.Orchestrator).Orchestrate()"
 
 display_test_errors
 display_statistics

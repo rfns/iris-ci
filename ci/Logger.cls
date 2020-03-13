@@ -1,13 +1,16 @@
 Include %occStatus
 
-Class CI.TestRunner.Logger
+Class CI.Logger
 {
 
-ClassMethod CreateErrorLogFromStatus(status) As %Status
+ClassMethod CreateErrorLogFromStatus(status As %Status) As %Status
 {
   set fs = ##class(%Stream.FileCharacter).%New()
   do fs.LinkToFile("/var/log/ci/errors.log")
   set content = $piece($System.Status.GetErrorText(status), ":", 2, *)
+  do fs.Write("FATAL ERROR:")
+  do fs.WriteLine("")
+  do fs.WriteLine("")
   do fs.Write(content)
   return fs.%Save()
 }
@@ -20,7 +23,7 @@ ClassMethod CreateErrorLogFromStream(stream As %Stream.Object) As %Status
   return fs.%Save()
 }
 
-ClassMethod RegisterAssertionStatistics() As %Status
+ClassMethod CreateAssertionStatistics() As %Status
 {
   set success = 0
   set failure = 0

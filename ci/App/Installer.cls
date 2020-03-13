@@ -1,4 +1,4 @@
-Class CI.App.Installer
+Class App.Installer
 {
 
 XData setup
@@ -12,7 +12,7 @@ XData setup
     </Configuration>
     <IfDef Var="cspapp">
     <Log Level="2" Text="CreateCSPApplication: Creating CSP application for ${cspapp}" />
-      <Invoke Class="CI.App.Installer" Method="CreateCSPApplication" CheckStatus="1">
+      <Invoke Class="App.Installer" Method="CreateCSPApplication" CheckStatus="1">
         <Arg Value="${cspapp}" />
         <Arg Value="${cspapp_authmethods}" />
         <Arg Value="${cspapp_directory}" />
@@ -27,7 +27,7 @@ XData setup
     <IfDef Var="restapp">
       <IfDef Var="restapp_dispatchclass">
         <Log Level="2" Text="CreateCSPApplication: Creating REST API for ${restapp}" />
-        <Invoke Class="CI.App.Installer" Method="CreateCSPApplication" CheckStatus="1">
+        <Invoke Class="App.Installer" Method="CreateCSPApplication" CheckStatus="1">
           <Arg Value="${restapp}" />
           <Arg Value="${restapp_authmethods}" />
           <Arg Value="" />
