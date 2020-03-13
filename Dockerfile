@@ -26,9 +26,9 @@ USER irisowner
 SHELL ["/opt/ci/scripts/setup-iris.sh"]
 
 RUN \
-  do $System.OBJ.Load("/opt/ci/TestRunner/Configuration.cls", "ck") \
-  do $System.OBJ.Load("/opt/ci/TestRunner/Orchestrator.cls", "ck") \
-  do $System.OBJ.Load("/opt/ci/TestRunner/Logger.cls", "ck") \
+  do $System.OBJ.Load("/opt/ci/Configuration.cls", "ck") \
+  do $System.OBJ.Load("/opt/ci/Orchestrator.cls", "ck") \
+  do $System.OBJ.Load("/opt/ci/Logger.cls", "ck") \
   do $System.OBJ.Load("/opt/ci/dotenv-parser.cls", "ck") \
   do $System.OBJ.Load("/opt/ci/dotenv-command.cls", "ck")
 
