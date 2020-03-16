@@ -39,7 +39,7 @@ So if you have a project with many classes, it might be interesting to at least 
 
 This image ships with a installer manifest that uses two prefixes in order to configure and create web applications:
 
-* `CI_CSPAPP_{param}` are related to envs that can be used to configure CSP application.
+* `CI_CSPAPP_{param}` is related to envs that can be used to configure CSP application.
 * `CI_RESTAPP_{param}` same as as `CI_CSPAPP` but allow providing configurations related to creating a REST-based application.
 
 The `param` placeholder refers to the parameter names used by the [Security.Applications](https://docs.intersystems.com/csp/documatic/%25CSP.Documatic.cls?PAGE=CLASS&LIBRARY=%25SYS&CLASSNAME=Security) class when creating an new web application.
