@@ -31,9 +31,9 @@ There's two ways to provide an environment variable:
 * Variables prefixed with `TESPARAM_{NAME}`are passed down as `NAME` to the unit test manager's UserFields property.
 * `TEST_SUITE`and `TEST_CASE` to control where to locate and which test case to target.
 
-If you don't specify the `TEST_SUITE` the `recursive` flag will be set.
+If you don't specify the `TEST_CASE` the `recursive` flag will be set.
 
-So if you have a project with many classes, it might be interesting to at least define the `TEST_SUITE` due to performance concerns.
+So if you have a project with many classes, it might be interesting to at least define the `TEST_SUITE` and reduce the search scope due to performance concerns.
 
 ## Using the default installer manifest for unit tests
 
@@ -60,7 +60,7 @@ CI_RESTAPP_NAME="/api/myapp"
 CI_RESTAPP_DISPATCHCLASS="API.MyApp"
 ```
 
-Remember that additional parameters que be provided. Check the list below from the current installer implementation:
+Remember that additional parameters can be provided. Check the list below from the current installer implementation:
 
 ```objectscript
 set params("AuthEnabled") = authMethods
