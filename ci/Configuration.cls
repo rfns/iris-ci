@@ -1,15 +1,15 @@
 Class CI.Configuration Extends %RegisteredObject
 {
 
-Property RecurseFlag As %String;
+Property RecurseFlag As %String [ ReadOnly ];
 
-Property TestSuite As %String;
+Property TestSuite As %String [ ReadOnly ];
 
-Property TestCase As %String;
+Property TestCase As %String [ ReadOnly ];
 
-Property Envs As array of %String;
+Property Envs As array of %String [ Private ];
 
-Property TestParameters As %String [ MultiDimensional ];
+Property TestParameters As %String [ MultiDimensional, Private ];
 
 Method %OnNew(envList As %ArrayOfDataTypes) As %Status
 {
@@ -19,14 +19,19 @@ Method %OnNew(envList As %ArrayOfDataTypes) As %Status
   return $$$OK
 }
 
-Method PrepareTestContext()
+Method GetEnv(name As %String) As %Status
 {
-  set ..TestSuite = $System.Util.GetEnviron("TEST_SUITE")
-  set ..TestCase = $System.Util.GetEnviron("TEST_CASE")
-  set ..RecurseFlag = ..ResolveRecurseFlag()
+  return ..Envs.GetAt(name)
 }
 
-Method ParseTestParameters()
+Method PrepareTestContext() [ Private ]
+{
+  set i%TestSuite = $System.Util.GetEnviron("TEST_SUITE")
+  set i%TestCase = $System.Util.GetEnviron("TEST_CASE")
+  set i%RecurseFlag = ..ResolveRecurseFlag()
+}
+
+Method ParseTestParameters() [ Private ]
 {
   set name = ""
   set i%TestParameters = ""
@@ -40,10 +45,15 @@ Method ParseTestParameters()
   }
 }
 
-Method ResolveRecurseFlag() As %String
+Method ResolveRecurseFlag() As %String [ Private ]
 {
   if ..TestCase = "" return "recursive"
   return "norecursive"
+}
+
+Method GetTestParameters(Output testParams = "")
+{
+  merge testParams = i%TestParameters
 }
 
 }
