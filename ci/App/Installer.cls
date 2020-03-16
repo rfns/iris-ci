@@ -13,9 +13,9 @@ XData setup
     <IfDef Var="cspapp">
     <Log Level="2" Text="CreateCSPApplication: Creating CSP application for ${cspapp}" />
       <Invoke Class="App.Installer" Method="CreateCSPApplication" CheckStatus="1">
-        <Arg Value="${cspapp}" />
-        <Arg Value="${cspapp_authmethods}" />
-        <Arg Value="${cspapp_directory}" />
+        <Arg Value="${cspapp_name}" />
+        <Arg Value="${cspapp_authenabled}" />
+        <Arg Value="${cspapp_path}" />
         <Arg Value="" />
         <Arg Value="${cspapp_roles}" />
         <Arg Value="${cspapp_recurse}" />
@@ -28,8 +28,8 @@ XData setup
       <IfDef Var="restapp_dispatchclass">
         <Log Level="2" Text="CreateCSPApplication: Creating REST API for ${restapp}" />
         <Invoke Class="App.Installer" Method="CreateCSPApplication" CheckStatus="1">
-          <Arg Value="${restapp}" />
-          <Arg Value="${restapp_authmethods}" />
+          <Arg Value="${restapp_name}" />
+          <Arg Value="${restapp_authenabled}" />
           <Arg Value="" />
           <Arg Value="${restapp_dispatchclass}" />
           <Arg Value="${restapp_roles}" />
@@ -45,7 +45,7 @@ XData setup
 </Manifest>
 }
 
-ClassMethod CreateCSPApplication(cspapp As %String, authMethods As %String = 32, directory As %String = "", dispatchClass As %String = "", roles As %String ="%All", recurse As %String = 1, serveFiles As %Boolean = 1, cookiePath As %String = "", namespace As %String = "") As %Status
+ClassMethod CreateCSPApplication(cspapp As %String, authEnabled As %String = 32, directory As %String = "", dispatchClass As %String = "", roles As %String ="%All", recurse As %String = 1, serveFiles As %Boolean = 1, cookiePath As %String = "", namespace As %String = "") As %Status
 {
   new $namespace
   set $namespace = "%SYS"
