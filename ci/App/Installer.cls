@@ -50,7 +50,7 @@ ClassMethod CreateCSPApplication(cspapp As %String, authEnabled As %String = 32,
   new $namespace
   set $namespace = "%SYS"
 
-  set params("AuthEnabled") = authMethods
+  set params("AuthEnabled") = authEnabled
   set params("AutoCompile") = 1
   set params("CSPZENEnabled") = 1
   set params("CookiePath") = cookiePath
