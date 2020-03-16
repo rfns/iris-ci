@@ -62,7 +62,7 @@ CI_RESTAPP_DISPATCHCLASS="API.MyApp"
 
 Remember that additional parameters que be provided. Check the list below from the current installer implementation:
 
-``objectscript
+```objectscript
 set params("AuthEnabled") = authMethods
 set params("AutoCompile") = 1
 set params("CSPZENEnabled") = 1
