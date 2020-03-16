@@ -82,6 +82,7 @@ ClassMethod WriteAssertionStatistics(failure As %Integer = 0, success As %Intege
   write $$$BOLDRED("✗ "_failure_" assertions have failed."), !
 
   IF failure > 0 return $$$ERROR($$$GeneralError, "ASSERTION ERROR.")
+  return $$$OK
 }
 
 ClassMethod  WriteSummaryFromFailures() [ Private ]
