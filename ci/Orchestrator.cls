@@ -1,4 +1,4 @@
-Include %occStatus
+Include ci
 
 Class CI.Orchestrator
 {
@@ -6,30 +6,74 @@ Class CI.Orchestrator
 ClassMethod Orchestrate() As %Status
 {
   try {
-    write !, "Orchestrator: Compiling runtime classes ...", !
-    $$$ThrowOnError($System.OBJ.Load("/opt/ci/App/Installer.cls", "/compile"))
-    $$$ThrowOnError($System.OBJ.Load("/opt/ci/Runner.cls", "/compile"))
-
+    $$$ThrowOnError(..CompileRuntime())
     $$$ThrowOnError(..GetEnvironmentVars(.vars, .envList))
+    $$$ThrowOnError(..RunInstallerSetup(.vars))
 
-    write !
-    $$$ThrowOnError(##class(App.Installer).setup(.vars))
-    write !
+    set configuration = ..GetRunnerConfiguration(envList)
 
-    set configuration = ##class(CI.Configuration).%New(envList)
-
-    $$$ThrowOnError(##class(CI.Runner).Run(configuration))
-    $$$ThrowOnError(##class(CI.Runner).OnAfterRun(configuration))
+    $$$ThrowOnError(..StartRunner(configuration))
+    $$$ThrowOnError(..TerminateRunner(configuration))
+    do ..DisplayTerminationNotice()
   } catch ex {
-    set status = ex.AsStatus()
-    do ##class(CI.Logger).CreateErrorLogFromStatus(status)
-    do $System.Process.Terminate(, 1)
+    return ..HandleException(ex)
   }
 
   return $$$OK
 }
 
-ClassMethod GetEnvironmentVars(Output vars As %String = "", Output envs As %ArrayOfDataTypes = "") As %Status
+ClassMethod HandleException(ex As %Exception.StatusException) As %Status [ Private ]
+{
+  set status = ex.AsStatus()
+  write !, $$$RED("Orchestrator: ***WARNING*** Aborting due to errors and exit with non-zero code."), !!
+  set content = $zstrip($piece($System.Status.GetErrorText(status), ":", 2, *), "<>W")
+  write $$$RED(content), !!
+  return $System.Process.Terminate(, 1)
+}
+
+ClassMethod DisplayTerminationNotice() [ Private ]
+{
+  write !, "Orchestrator: Notice: All tasks have been completed. The instance will now be terminated gracefully.", !!
+}
+
+ClassMethod GetRunnerConfiguration(envList As %ListOfDataTypes) As CI.Configuration [ Private ]
+{
+  write !, "Orchestrator: Configuring the runner."
+  set configuration = ##class(CI.Configuration).%New(envList)
+  return configuration
+}
+
+ClassMethod StartRunner(configuration As CI.Configuration) As %Status [ Private ]
+{
+  write !, "Orchestrator: Starting the runner.", !!
+  $$$QuitOnError(##class(CI.Runner).Run(configuration))
+  write !!
+  return $$$OK
+}
+
+ClassMethod TerminateRunner(configuration As CI.Configuration) As %Status [ Private ]
+{
+  $$$QuitOnError(##class(CI.Runner).OnAfterRun(configuration))
+  write !!, "Orchestrator: Runner has terminated without errors."
+  return $$$OK
+}
+
+ClassMethod CompileRuntime() As %Status [ Private ]
+{
+  write !, "Orchestrator: Compiling runtime classes."
+  $$$QuitOnError($System.OBJ.Load("/opt/ci/App/Installer.cls", "/compile/nodisplay"))
+  $$$QuitOnError($System.OBJ.Load("/opt/ci/Runner.cls", "/compile/nodisplay"))
+  return $$$OK
+}
+
+ClassMethod RunInstallerSetup(ByRef vars  As %String = "") As %Status [ Private ]
+{
+    write !, "Orchestrator: Running the installer setup.", !!
+    $$$QuitOnError(##class(App.Installer).setup(.vars))
+    return $$$OK
+}
+
+ClassMethod GetEnvironmentVars(Output vars As %String = "", Output envs As %ArrayOfDataTypes = "") As %Status [ Private ]
 {
   set envs = ##class(DotEnv.Parser).FromPath("/opt/ci")
   set name = ""
