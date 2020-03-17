@@ -7,13 +7,13 @@ Basically a way to run your unit tests in a way that continuous integration tool
 1. Download the image from the registry:
 
 ```
-docker pull rfns/iris-ci:0.5.1
+docker pull rfns/iris-ci:0.5.2
 ```
 
 2. Run the container (with the default settings)
 
 ```
-docker run --rm --name ci -t -v /path/to/your/app:/opt/ci/app rfns/iris-ci:0.5.1
+docker run --rm --name ci -t -v /path/to/your/app:/opt/ci/app rfns/iris-ci:0.5.2
 ```
 
 ## Environment variables
