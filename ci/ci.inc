@@ -4,3 +4,4 @@
 #define BOLDGREEN(%msg) $$$ESCKEY_$zcvt("[32;1m"_%msg_$$$ESCKEY_"[0m", "O", "UTF8")
 #define BOLDRED(%msg) $$$ESCKEY_$zcvt("[31;1m"_%msg_$$$ESCKEY_"[0m", "O", "UTF8")
 #define BOLDYELLOW(%msg) $$$ESCKEY_$zcvt("[33;1m"_%msg_$$$ESCKEY_"[0m", "O", "UTF8")
+#define NULL $s($$$isWINDOWS : "//./nul", 1: "/dev/null")

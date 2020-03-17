@@ -10,25 +10,37 @@ ClassMethod Run(configuration As CI.Configuration) As %Status
   set environmentNS = configuration.GetEnv("CI_NAMESPACE")
   set $namespace = $get(environmentNS, $namespace)
 
-  do configuration.GetTestParameters(.params)
+  do ..ResolveConfiguration(configuration, .testSpecs, .flags, .params)
+  do ..DescribeConfiguration(testSpecs, flags)
 
-  #define NULL $s($$$isWINDOWS : "//./nul", 1: "/dev/null")
+  return ..RunSilently(testSpecs, flags, .params)
+}
+
+ClassMethod ResolveConfiguration(configuration As CI.Configuration, Output testSpecs As %String, Output flags As %String, Output params As %String)
+{
+  do configuration.GetTestParameters(.params)
 
   set ^UnitTestRoot = "/opt/ci/app"
   set flags = "/"_configuration.RecurseFlag_"/run/noload/nodelete/nodisplay"
-  set testSpec = configuration.TestSuite_":"_configuration.TestCase
+  set testSpecs = configuration.TestSuite_":"_configuration.TestCase
+}
 
+ClassMethod DescribeConfiguration(testSpecs As %String, flags As %String) [ Private ]
+{
   write "Runner: Running test suites from: "_^UnitTestRoot_"."
   write !, "Runner: Flags: "_flags
-  write !, "Runner: Spec: "_$select(testSpec = ":" : "none", 1: testSpec)
+  write !, "Runner: Spec: "_$select(testSpecs = ":" : "none", 1: testSpecs)
   write !, "Runner: Notice: The test execution summary will be displayed at the end."
+}
 
+ClassMethod RunSilently(testSpecs As %String, flags As %String, ByRef params As %String) As %Status [ Private ]
+{
   set io = $io
 
   open $$$NULL
   use $$$NULL
 
-  set sc = ##class(%UnitTest.Manager).RunTest(testSpec, flags, .params)
+  set sc = ##class(%UnitTest.Manager).RunTest(testSpecs, flags, .params)
 
   use io
   close $$$NULL
@@ -38,13 +50,15 @@ ClassMethod Run(configuration As CI.Configuration) As %Status
 
 ClassMethod OnAfterRun(configuration As CI.Configuration) As %Status
 {
-  return ..HandleUnitTestFeedback()
+  return ..HandleUnitTestFeedback(configuration)
 }
 
-ClassMethod HasAnyTestBeenExecuted() As %Boolean
+ClassMethod HasAnyTestBeenExecuted() As %Boolean [ Private ]
 {
-  &sql(SELECT COUNT (ID) INTO :total FROM %UNITTEST_RESULT.TESTASSERT)
-  if total = 0 {
+  set found = 0
+  &sql(SELECT TOP 1 ID INTO :found FROM %UNITTEST_RESULT.TESTASSERT)
+
+  if found = 0 {
     write $$$BOLDYELLOW("No tests suites were found. The runner has been aborted."), !
     return 0
   }
@@ -52,8 +66,13 @@ ClassMethod HasAnyTestBeenExecuted() As %Boolean
   return 1
 }
 
-ClassMethod HandleUnitTestFeedback() As %Status [ Private ]
+ClassMethod HandleUnitTestFeedback(configuration As CI.Configuration) As %Status [ Private ]
 {
+  new $namespace
+
+  set environmentNS = configuration.GetEnv("CI_NAMESPACE")
+  set $namespace = $get(environmentNS, $namespace)
+
   if '..HasAnyTestBeenExecuted() return $$$OK
   do ..GetAssertionResult(.failure, .success)
 

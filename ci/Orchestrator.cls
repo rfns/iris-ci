@@ -68,9 +68,9 @@ ClassMethod CompileRuntime() As %Status [ Private ]
 
 ClassMethod RunInstallerSetup(ByRef vars  As %String = "") As %Status [ Private ]
 {
-    write !, "Orchestrator: Running the installer setup.", !!
-    $$$QuitOnError(##class(App.Installer).setup(.vars))
-    return $$$OK
+  write !, "Orchestrator: Running the installer setup.", !!
+  $$$QuitOnError(##class(App.Installer).setup(.vars))
+  return $$$OK
 }
 
 ClassMethod GetEnvironmentVars(Output vars As %String = "", Output envs As %ArrayOfDataTypes = "") As %Status [ Private ]
