@@ -40,6 +40,8 @@ ClassMethod RunSilently(testSpecs As %String, flags As %String, ByRef params As 
   open $$$NULL
   use $$$NULL
 
+  if testSpecs = ":" set testSpecs = ""
+
   set sc = ##class(%UnitTest.Manager).RunTest(testSpecs, flags, .params)
 
   use io
@@ -78,9 +80,17 @@ ClassMethod HandleUnitTestFeedback(configuration As CI.Configuration) As %Status
 
   do ..WriteAssertionResult(failure, success)
   do ..WriteSummaryFromFailures()
+  do ..WriteEllapsedTime()
 
   $$$QuitOnError(..WriteAssertionStatistics(failure, success))
   return $$$OK
+}
+
+ClassMethod WriteEllapsedTime() [ Private ]
+{
+  set time = 0
+  &sql(SELECT TOP 1 DURATION INTO :time FROM %UNITTEST_RESULT.TESTINSTANCE)
+  write $$$BOLDDEFAULT("Elapsed time: "_time_" seconds."), !!
 }
 
 ClassMethod GetAssertionResult(Output failure = 0, Output success = 0) [ Private ]
@@ -121,6 +131,13 @@ ClassMethod  WriteSummaryFromFailures() [ Private ]
             set testMethod = testCase.TestMethods.GetAt(k)
             if testMethod.Status = 0 {
               write $$$RED("    "_"and executing the method "_testMethod.Name_"..."), !
+
+              if testMethod.ErrorAction '= "" {
+                write $$$BOLDRED("      "_ " aborted the assertion due to an error..."), !
+                write $$$BOLDRED("        "_ " with the description: "_testMethod.ErrorDescription), !
+                continue
+              }
+
               for l=1:1:testMethod.TestAsserts.Count() {
                 set testAssert = testMethod.TestAsserts.GetAt(l)
                 if testAssert.Status = 0 {
