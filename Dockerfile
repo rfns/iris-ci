@@ -11,7 +11,7 @@ RUN \
 COPY scripts/setup-iris.sh scripts/entrypoint.sh /opt/stage/scripts/
 COPY ci ./
 
-FROM containers.intersystems.com/intersystems/iris-community:2022.1.0.209.0
+FROM docker.io/intersystemsdc/iris-community:latest
 
 WORKDIR /opt/ci
 COPY --from=stage /opt/stage /opt/ci
