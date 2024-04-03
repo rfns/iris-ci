@@ -1,19 +1,17 @@
 # IRIS CI
 
-Basically a way to run your unit tests in a way that continuous integration tools might like, including the GitHub Actions.
+Basically a way to run your ~~unit tests~~ runners in a way that continuous integration tools might like, including the GitHub Actions.
 
 ## Quickstart
 
-1. Download the image from the registry:
+Assuming that you have a `tests` folder with all your tests. Map the volume to the repo that contains it and [Port](https://github.com/rfns/port) will automatically your cls folder.
 
-```
-docker pull rfns/iris-ci:0.6.1
-```
+If your cls files are inside a `src` folder, add that as part of the local path as well. e.g: `-v $PWD/<your_repo>/src:/opt/ci/app`
 
-2. Run the container (with the default settings)
-
-```
-docker run --rm --name ci -t -v /path/to/your/app:/opt/ci/app rfns/iris-ci:0.6.3
+```sh
+docker run -t --rm --name ci \
+-e TEST_SUITE="tests" \
+-v $PWD/<you_repo>:/opt/ci/app ghcr.io/rfns/iris-ci/iris-ci:v0.6.3
 ```
 
 ## Environment variables
@@ -23,7 +21,7 @@ There's two ways to provide an environment variable:
 * `-e VAR_NAME="var value"` while using `docker run`.
 * By providing an extra volume for `docker run` like this: `-v /my/app/.env:/opt/ci/.env`.
 
-> NOTE: In case a variable is defined in both formats, using the `-e` format takes precedence over using a `.env` file.
+> NOTE: In case a variable is defined in both formats, using the `-e` format takes precedence over `.env` files.
 
 ## Types of environment variables
 
@@ -42,8 +40,7 @@ This image ships with a installer manifest that uses two prefixes in order to co
 * `CI_CSPAPP_{param}` is related to envs that can be used to configure CSP application.
 * `CI_RESTAPP_{param}` same as as `CI_CSPAPP` but allow providing configurations related to creating a REST-based application.
 
-The `param` placeholder refers to the parameter names used by the [Security.Applications](https://docs.intersystems.com/csp/documatic/%25CSP.Documatic.cls?PAGE=CLASS&LIBRARY=%25SYS&CLASSNAME=Security) class when creating an new web application.
-
+The `param` placeholder refers to the property names used by the [Security.Applications](https://docs.intersystems.com/csp/documatic/%25CSP.Documatic.cls?PAGE=CLASS&LIBRARY=%25SYS&CLASSNAME=Security).
 Usage example:
 
 To create a CSP application named `csp/myapp`:
@@ -84,23 +81,12 @@ set params("UseCookies") = 2
 
 Note that some classes have default values while others have them hardcoded. This is because you mostly wouldn't care about those parameters while running the instance inside a CI environment.
 
-## Advanced control
+### Implementing your own runner
 
-You'll notice that by default the built-in Installer is designed for usage with unit test. But what if you wanted to another task like exporting a XML? Using the current classes: CI.Runner and App.Installer won't work.
+While the `Installer.cls` provides you flexibility enough to create your own setup, the `Runner.cls` must be composed by two classmethods `Run` and `OnAfterRun`, both must accept a configuration object provided by the `CI.Configuration` class.
+You can use `configuration.GetEnv("YOUR_ENV_NAME")` to consume environment variables and change your runner's behavior. _iris-ci_ already includes a [runner](https://github.com/rfns/iris-ci/blob/master/ci/Runner.cls) for running tests, but despite `ci` assumption, you can also use this tool as a `cd` companion. Check [iris-ci-xml](https://github.com/rfns/iris-ci-xml) to see an example of a runner that generates a project XML artifact.
 
-This is where you need to overwrite one or both classes according to your needs.
-
-You can overwrite them by providing a volume that mounts to your local implementation classes, e.g.
-
-```
-docker run --rm --name ci -t -v ~/Documents/iris-projects/myapp:/opt/ci/app -v ~/Documents/iris-projects/ci-xml/ci/App/Installer.cls:/opt/ci/App/Installer.cls -v ~/Documents/iris-projects/ci-xml/Runner.cls:/opt/ci/Runner.cls
-```
-
-### Regarding the implementation
-
-While the `Installer.cls` provides you flexibility enough to create your own. The `Runner.cls` must be composed by two classmethods `Run` and `OnAfterRun`. Both must accept a configuration object provided by the `CI.Configuration` class.
-
-The template for creating a runner class is as follows:
+The template for creating a runner class follows the format below:
 
 ```objectscript
 Class CI.Runner
@@ -118,3 +104,7 @@ ClassMethod OnAfterRun(configuration As CI.Configuration) As %Status
 
 }
 ```
+
+### CONTRIBUTING
+
+Although this project _works on my machine_™, you might still find bugs along the road or have good ideas. You're encouraged to either open a PR or issue. Don't be afraid!
