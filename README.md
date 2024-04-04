@@ -105,6 +105,6 @@ ClassMethod OnAfterRun(configuration As CI.Configuration) As %Status
 }
 ```
 
-### CONTRIBUTING
+## CONTRIBUTING
 
-Although this project _works on my machine_™, you might still find bugs along the road or have good ideas. You're encouraged to either open a PR or issue. Don't be afraid!
+Although this project ¨works on my machine™¨, you might still find bugs along the road or have good ideas. You're encouraged to either open a PR or issue. Don't be afraid!
