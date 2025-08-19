@@ -92,9 +92,19 @@ ClassMethod WriteElapsedTime() [ Private ]
 
 ClassMethod GetAssertionResult(Output failure As %Integer = 0, Output success As %Integer = 0, Output error As %Integer = 0) [ Private ]
 {
-  &sql(SELECT COUNT (ID) INTO :success FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 1 AND ACTION <> 'LogMessage')
-  &sql(SELECT COUNT (ID) INTO :failure FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 0 AND ACTION <> 'LogMessage')
-  &sql(SELECT COUNT (ID) INTO :error FROM %UNITTEST_RESULT.TESTMETHOD WHERE ERRORACTION IS NOT NULL AND ERRORACTION <> '')
+  &sql(SELECT COUNT(ID) INTO :success FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 1 AND ACTION <> 'LogMessage')
+  &sql(SELECT COUNT(ID) INTO :assertFailure FROM %UNITTEST_RESULT.TESTASSERT WHERE STATUS = 0 AND ACTION <> 'LogMessage')
+  &sql(
+    SELECT COUNT(ID) INTO :error FROM (
+      SELECT ID FROM %UNITTEST_RESULT.TESTMETHOD WHERE ERRORACTION IS NOT NULL AND ERRORACTION <> ''
+      UNION (
+        SELECT ID FROM %UNITTEST_RESULT.TESTSUITE WHERE ERRORACTION IS NOT NULL AND ERRORACTION <> ''
+      )
+      UNION (
+        SELECT ID FROM %UNITTEST_RESULT.TESTCASE WHERE ERRORACTION IS NOT NULL AND ERRORACTION <> ''
+      )
+    )
+  )
 }
 
 ClassMethod WriteAssertionResult(failure As %Integer, success As %Integer, error As %Integer) [ Private ]
@@ -106,9 +116,9 @@ ClassMethod WriteAssertionResult(failure As %Integer, success As %Integer, error
 
 ClassMethod WriteAssertionStatistics(failure As %Integer = 0, success As %Integer = 0, error As %Integer = 0) As %Status [ Private ]
 {
-  write $$$BOLDGREEN("✓ "_success_ " assertions have passed."), !
-  write $$$BOLDRED("✗ "_failure_" assertions have failed."), !
-  if error > 0 write $$$BOLDRED("! "_error_" assertions have errored."), !
+  write $zcvt($$$BOLDGREEN("✓ "_success_ " assertions have passed."), "I", "UTF8"), !
+  write $zcvt($$$BOLDRED("✗ "_failure_" assertions have failed."), "I", "UTF8"), !
+  if error > 0 write $zcvt($$$BOLDRED("! "_error_" assertions have errored."), "I", "UTF8"), !
 
   IF failure > 0 || (error > 0) return $$$ERROR($$$GeneralError, "ASSERTION ERROR.")
   return $$$OK
@@ -123,10 +133,12 @@ ClassMethod  WriteSummaryFromFailures() [ Private ]
     set testSuite = testResult.TestSuites.GetAt(i)
     if testSuite.Status = 0 {
       write $$$RED("Assertion failure on test suite from "_testSuite.Name), !
+      write $$$RED("Description: "_testSuite.ErrorDescription), !
       for j=1:1:testSuite.TestCases.Count() {
         set testCase = testSuite.TestCases.GetAt(j)
         if testCase.Status = 0 {
           write $$$RED("  "_"while running "_testCase.Name_"..."), !
+          write $$$RED("  "_"Description: "_testCase.ErrorDescription), !
           for k=1:1:testCase.TestMethods.Count() {
             set testMethod = testCase.TestMethods.GetAt(k)
             if testMethod.Status = 0 {
