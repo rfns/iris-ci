@@ -15,11 +15,13 @@ jobs:
         path: app
     - name: Parse the tag
       id: tag_parsing
-      run:  echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      run: |
+          export VERSION=${GITHUB_REF/refs\/tags\//}
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
     - name: Build and run
       run: |
         echo "${{ secrets.GITHUB_TOKEN }}" > ~/GH_TOKEN.txt
-        cat ~/GH_TOKEN.txt | docker login -u rfns --password-stdin docker.pkg.github.com
-        docker build -t docker.pkg.github.com/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }} app
-        docker push docker.pkg.github.com/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }}
+        cat ~/GH_TOKEN.txt | docker login -u rfns --password-stdin ghcr.io
+        docker build -t ghcr.io/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }} app
+        docker push ghcr.io/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }}
 
