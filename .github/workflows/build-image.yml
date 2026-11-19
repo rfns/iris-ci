@@ -1,27 +1,200 @@
-name: Build and publish tagged docker image
+name: Build and publish the image
 
 on:
   release:
     types: [published]
 
-jobs:
+  # The reason this workflow is not release-only. The Community licence inside
+  # the base image expires about a year after its release, which silently kills
+  # an image that was never touched. Rebuilding on a schedule keeps the licence
+  # current without anyone having to notice it died.
+  schedule:
+    - cron: "0 6 1 * *"
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to rebuild. Defaults to the latest release."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
   build:
     runs-on: ubuntu-latest
+    name: Build and publish
+    outputs:
+      YEAR: ${{ steps.iris.outputs.YEAR }}
     steps:
-    - name: Clone this repository
-      uses: actions/checkout@v2
-      with:
-        path: app
-    - name: Parse the tag
-      id: tag_parsing
-      run: |
-          export VERSION=${GITHUB_REF/refs\/tags\//}
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-    - name: Build and run
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" > ~/GH_TOKEN.txt
-        cat ~/GH_TOKEN.txt | docker login -u rfns --password-stdin ghcr.io
-        docker build -t ghcr.io/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }} app
-        docker push ghcr.io/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }}
+      - name: Resolve the version
+        id: metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ inputs.version }}"
 
+          if [ -z "$version" ] && [ "${{ github.event_name }}" = "release" ]; then
+            version="${{ github.ref_name }}"
+          fi
+
+          # On a schedule there is no tag in context, so the newest release is
+          # the one worth keeping alive.
+          if [ -z "$version" ]; then
+            version=$(gh release view -R ${{ github.repository }} --json tagName --jq .tagName)
+          fi
+
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
+
+      - name: Clone this repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.metadata.outputs.VERSION }}
+
+      - name: Log in to the registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Built locally first. The tags depend on which IRIS came out of the
+      # build, and that can only be read from the image itself.
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # --pull matters here: without it a cached base would carry the very
+          # licence this rebuild exists to replace.
+          pull: true
+          load: true
+          tags: iris-ci:candidate
+
+      # Publishing an image whose licence is already dead would defeat the
+      # point, so the freshly built image has to start before anyone uses it.
+      # The same run reports which IRIS is inside.
+      - name: Verify the image and read the IRIS release
+        id: iris
+        run: |
+          set -o pipefail
+
+          cat > /tmp/version.txt <<'SCRIPT'
+          write $zv,!
+          halt
+          SCRIPT
+
+          docker run --rm -i --entrypoint /bin/bash \
+            -v /tmp/version.txt:/tmp/version.txt \
+            iris-ci:candidate \
+            -c 'iris start IRIS quietly && iris session IRIS -U USER < /tmp/version.txt && iris stop IRIS quietly' \
+            | tee /tmp/smoke.log
+
+          if grep -qiE "licen[cs]e expired|Invalid Community Edition licen[cs]e" /tmp/smoke.log; then
+            echo "::error::The base image shipped an expired Community licence. The published image will not work."
+            exit 1
+          fi
+
+          # $ZV reads "IRIS for UNIX (...) 2026.1 (Build 234U) Fri Mar 27 2026".
+          # Requiring the dotted minor avoids matching the build date.
+          release=$(grep -oE '\b20[0-9]{2}\.[0-9]+' /tmp/smoke.log | head -1)
+
+          if [ -z "$release" ]; then
+            echo "::error::Could not read the IRIS release from the image."
+            exit 1
+          fi
+
+          echo "RELEASE=$release" >> $GITHUB_OUTPUT
+          echo "YEAR=${release%%.*}" >> $GITHUB_OUTPUT
+          echo "Built on IRIS $release."
+
+      # Four tags, two axes. The tooling version and the IRIS release are
+      # independent, and the tag that expires is decided by the second one —
+      # which the old scheme hid entirely.
+      #
+      #   v0.6.5-iris2026  reproducible: both axes pinned
+      #   iris2026         newest tooling on that base, moves on every rebuild
+      #   v0.6.5           newest base for that tooling
+      #   latest           everything floating
+      - name: Push the tags
+        env:
+          IMAGE: ghcr.io/rfns/iris-ci/iris-ci
+          VERSION: ${{ steps.metadata.outputs.VERSION }}
+          YEAR: ${{ steps.iris.outputs.YEAR }}
+        run: |
+          for tag in "$VERSION-iris$YEAR" "iris$YEAR" "$VERSION" latest; do
+            docker tag iris-ci:candidate "$IMAGE:$tag"
+            docker push "$IMAGE:$tag"
+            echo "pushed $IMAGE:$tag"
+          done
+
+  prune:
+    needs: [build]
+    runs-on: ubuntu-latest
+    name: Remove images that cannot start anymore
+    steps:
+      # An image whose Community licence died is worse than absent: pulling it
+      # succeeds, and the failure only shows up minutes later, after a startup
+      # that was never going to work. A missing tag fails in seconds with
+      # "manifest unknown", which is the better answer.
+      #
+      # Retention is by IRIS release, not by age of the upload, because that is
+      # what decides whether an image still runs. The current year and the one
+      # before it are kept; everything older goes, along with untagged layers.
+      #
+      # The untagged rule is what actually clears the expired ones. Rebuilding
+      # v0.6.5 on a current base pushes that tag to a new digest, which leaves
+      # the old, dead image with no tags at all — and this step then removes it.
+      # The year window is for pins that nothing rebuilds, like an abandoned
+      # iris2020. A one-year grace is deliberate: a Community licence outlives
+      # its release by roughly a year, so last year's image may still run.
+      - name: Remove expired and untagged versions
+        env:
+          GH_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          KEEP_FROM: ${{ needs.build.outputs.YEAR }}
+        run: |
+          set -euo pipefail
+
+          package="iris-ci%2Firis-ci"
+          oldest_kept=$((KEEP_FROM - 1))
+          echo "Keeping images built on IRIS $oldest_kept or newer."
+
+          gh api --paginate "/user/packages/container/$package/versions" \
+            > /tmp/versions.json
+
+          jq -c '.[]' /tmp/versions.json | while read -r version; do
+            id=$(printf '%s' "$version" | jq -r '.id')
+            tags=$(printf '%s' "$version" | jq -r '.metadata.container.tags | join(",")')
+
+            if [ -z "$tags" ]; then
+              echo "removing untagged version $id"
+              gh api -X DELETE "/user/packages/container/$package/versions/$id"
+              continue
+            fi
+
+            # A moving tag says nothing about the base, so anything carrying one
+            # is left alone: it either points at the fresh build or will be
+            # replaced by the next one.
+            case ",$tags," in
+              *,latest,*) echo "keeping $id ($tags)"; continue ;;
+            esac
+
+            newest=$(printf '%s' "$tags" | grep -oE 'iris20[0-9]{2}' | grep -oE '20[0-9]{2}' | sort -rn | head -1 || true)
+
+            # Images published before this tagging scheme carry no release in
+            # their tags — and those are exactly the expired ones. The upload
+            # year stands in for the base: a Community licence outlives its
+            # release by about a year, so the two never drift far apart.
+            if [ -z "$newest" ]; then
+              newest=$(printf '%s' "$version" | jq -r '.created_at' | cut -c1-4)
+              echo "version $id ($tags) predates the release tags; using its upload year $newest"
+            fi
+
+            if [ "$newest" -lt "$oldest_kept" ]; then
+              echo "removing $id ($tags) — built on IRIS $newest"
+              gh api -X DELETE "/user/packages/container/$package/versions/$id"
+            else
+              echo "keeping $id ($tags) — built on IRIS $newest"
+            fi
+          done

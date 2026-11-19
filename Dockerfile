@@ -1,4 +1,11 @@
-FROM alpine:latest as stage
+# The Community licence is baked into the base image and stops working about a
+# year after that release. Defaulting to :latest means every rebuild picks up a
+# live licence; the ARG exists so a specific base can be pinned when a rebuild
+# has to reproduce an older image exactly. It sits before the first FROM because
+# only an ARG declared outside a stage can be used in a FROM.
+ARG IRIS_IMAGE=docker.io/intersystemsdc/iris-community:latest
+
+FROM alpine:latest AS stage
 
 WORKDIR /opt/stage
 
@@ -11,7 +18,7 @@ RUN \
 COPY scripts/setup-iris.sh scripts/entrypoint.sh /opt/stage/scripts/
 COPY ci ./
 
-FROM docker.io/intersystemsdc/iris-community:latest
+FROM ${IRIS_IMAGE}
 
 WORKDIR /opt/ci
 COPY --from=stage /opt/stage /opt/ci
