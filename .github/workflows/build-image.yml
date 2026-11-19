@@ -167,8 +167,24 @@ jobs:
             id=$(printf '%s' "$version" | jq -r '.id')
             tags=$(printf '%s' "$version" | jq -r '.metadata.container.tags | join(",")')
 
+            # Untagged does not mean unused. A push creates manifests the tagged
+            # image refers to, and the registry lists them as untagged versions
+            # of their own — deleting those leaves the tag resolving to content
+            # that no longer exists, and the pull fails with "not found".
+            #
+            # An orphan left behind by a tag that moved elsewhere is worth
+            # removing, and it is indistinguishable from the first kind except
+            # by age. Anything from the last month stays.
             if [ -z "$tags" ]; then
-              echo "removing untagged version $id"
+              created=$(printf '%s' "$version" | jq -r '.created_at')
+              age_days=$(( ( $(date +%s) - $(date -d "$created" +%s) ) / 86400 ))
+
+              if [ "$age_days" -lt 30 ]; then
+                echo "keeping untagged version $id — only $age_days day(s) old"
+                continue
+              fi
+
+              echo "removing untagged version $id — $age_days days old"
               gh api -X DELETE "/user/packages/container/$package/versions/$id"
               continue
             fi
