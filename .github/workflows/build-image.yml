@@ -1,27 +1,86 @@
-name: Build and publish tagged docker image
+name: Build and publish the image
 
 on:
   release:
     types: [published]
 
-jobs:
+  # The reason this workflow is not release-only. The Community licence inside
+  # the base image expires about a year after its release, which silently kills
+  # an image that was never touched. Rebuilding on a schedule keeps the licence
+  # current without anyone having to notice it died.
+  schedule:
+    - cron: "0 6 1 * *"
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to rebuild. Defaults to the latest release."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
   build:
     runs-on: ubuntu-latest
+    name: Build and publish
     steps:
-    - name: Clone this repository
-      uses: actions/checkout@v2
-      with:
-        path: app
-    - name: Parse the tag
-      id: tag_parsing
-      run: |
-          export VERSION=${GITHUB_REF/refs\/tags\//}
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-    - name: Build and run
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" > ~/GH_TOKEN.txt
-        cat ~/GH_TOKEN.txt | docker login -u rfns --password-stdin ghcr.io
-        docker build -t ghcr.io/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }} app
-        docker push ghcr.io/rfns/iris-ci/iris-ci:${{ steps.tag_parsing.outputs.VERSION }}
+      - name: Resolve the version
+        id: metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ inputs.version }}"
 
+          if [ -z "$version" ] && [ "${{ github.event_name }}" = "release" ]; then
+            version="${{ github.ref_name }}"
+          fi
+
+          # On a schedule there is no tag in context, so the newest release is
+          # the one worth keeping alive.
+          if [ -z "$version" ]; then
+            version=$(gh release view -R ${{ github.repository }} --json tagName --jq .tagName)
+          fi
+
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
+
+      - name: Clone this repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.metadata.outputs.VERSION }}
+
+      - name: Log in to the registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # --pull matters here: without it a cached base would carry the very
+          # licence this rebuild exists to replace.
+          pull: true
+          push: true
+          tags: |
+            ghcr.io/rfns/iris-ci/iris-ci:${{ steps.metadata.outputs.VERSION }}
+            ghcr.io/rfns/iris-ci/iris-ci:latest
+
+      # Publishing an image whose licence is already dead would defeat the
+      # point, so the freshly built image has to start before anyone uses it.
+      - name: Verify the image starts
+        run: |
+          set -o pipefail
+          docker run --rm --entrypoint /bin/bash \
+            ghcr.io/rfns/iris-ci/iris-ci:${{ steps.metadata.outputs.VERSION }} \
+            -c "iris start IRIS quietly && iris session IRIS -U USER '##class(%SYSTEM.Version).GetVersion()' && iris stop IRIS quietly" \
+            | tee /tmp/smoke.log
+
+          if grep -qiE "licen[cs]e expired|Invalid Community Edition licen[cs]e" /tmp/smoke.log; then
+            echo "::error::The base image shipped an expired Community licence. The published image will not work."
+            exit 1
+          fi
